@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server-side JavaScript Code</title>
+</head>
+<body>
+    <pre id="codeDisplay"></pre>
+
+    <script>
+        // Escaped HTML entities for special characters
+        const serverCode = `
+        // server.js
+
+        const express = require('express');
+        const { MongoClient, ObjectId } = require('mongodb');
+
+        const app = express();
+        const port = 3000;
+
+        const url = 'mongodb://localhost:27017'; // MongoDB connection URL
+        const dbName = 'mydatabase'; // Name of your database
+
+        const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+
+        app.use(express.json());
+
+        async function connectDb() {
+          try {
+            await client.connect();
+            console.log('Connected to MongoDB');
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        app.post('/users', async (req, res) => {
+          const { name, email } = req.body;
+          const db = client.db(dbName);
+          const result = await db.collection('users').insertOne({ name, email });
+          res.send(\`User created with ID: \${result.insertedId}\`);
+        });
+
+        app.get('/users', async (req, res) => {
+          const db = client.db(dbName);
+          const users = await db.collection('users').find().toArray();
+          res.json(users);
+        });
+
+        app.put('/users/:id', async (req, res) => {
+          const userId = req.params.id;
+          const newName = req.body.name;
+          const db = client.db(dbName);
+          const result = await db.collection('users').updateOne(
+            { _id: ObjectId(userId) },
+            { $set: { name: newName } }
+          );
+          res.send(\`\${result.modifiedCount} user updated\`);
+        });
+
+        app.delete('/users/:id', async (req, res) => {
+          const userId = req.params.id;
+          const db = client.db(dbName);
+          const result = await db.collection('users').deleteOne({ _id: ObjectId(userId) });
+          res.send(\`\${result.deletedCount} user deleted\`);
+        });
+
+        async function startServer() {
+          await connectDb();
+          app.listen(port, () => {
+            console.log(\`Server is running on http://localhost:\${port}\`);
+          });
+        }
+
+        startServer().catch(console.error);
+        `;
+
+        // Display the formatted server code
+        document.getElementById('codeDisplay').textContent = serverCode;
+    </script>
+</body>
+</html>
